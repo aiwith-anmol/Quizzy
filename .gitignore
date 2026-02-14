@@ -1,18 +1,31 @@
+# API Keys (NEVER commit!)
+.env
+.streamlit/secrets.toml
+*.key
+api_keys.txt
+secrets.json
+
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
-.Python
-env/
-venv/
-ENV/
-build/
-dist/
+*.dll
+*.dylib
+*.egg
 *.egg-info/
+dist/
+build/
+*.pyo
+*.pyd
 
-# Streamlit
-.streamlit/secrets.toml
+# Virtual Environment
+venv/
+env/
+ENV/
+myenv/
+.venv/
+virtualenv/
 
 # IDE
 .vscode/
@@ -20,11 +33,25 @@ dist/
 *.swp
 *.swo
 *~
+.DS_Store
+
+# Streamlit local
+.streamlit/
+!.streamlit/config.toml
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
 
 # OS
-.DS_Store
 Thumbs.db
-
-# API Keys (safety)
-*.key
-.env
+.DS_Store
