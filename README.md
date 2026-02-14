@@ -1,214 +1,202 @@
-# 📚 AI Study Assistant
+# ⚡ AI Study Assistant - Powered by Google Gemini
 
-A powerful web application that generates practice questions from study material using Google Gemini AI. Perfect for students who want to test their knowledge and prepare for exams!
+A fast, student-friendly web application that generates high-quality multiple-choice practice questions from your study material using Google's Gemini AI.
 
-## ✨ Features
+## 🎯 Features
 
-- **AI-Powered Question Generation**: Uses Google Gemini to create intelligent multiple-choice questions
-- **Customizable**: Choose topic focus and number of questions (3-10)
-- **Instant Feedback**: Get correct answers and detailed explanations
-- **Download Questions**: Save generated questions as a text file
-- **User-Friendly Interface**: Clean, intuitive design built with Streamlit
-- **Free to Use**: Uses Google's free Gemini API tier
+- **AI-Powered Question Generation**: Uses Google Gemini 1.5 Flash for fast, intelligent question creation
+- **Customizable**: Choose number of questions (1-10) and optional topic focus
+- **Safe for GitHub**: No hardcoded API keys - users provide their own
+- **Beautiful UI**: Modern, gradient-based design with responsive layout
+- **Smart Caching**: Questions are cached for 1 hour to save API calls
+- **Download Option**: Save generated questions as text files
+- **Error Handling**: Clear error messages and validation
+
+## 🔒 Security Features
+
+This application is **100% safe to publish on GitHub** because:
+
+- ✅ No API keys are hardcoded in the source code
+- ✅ Users must provide their own Gemini API key
+- ✅ API keys are stored only in session state (never saved to disk)
+- ✅ Comprehensive `.gitignore` prevents accidental key commits
+- ✅ Clear user instructions for obtaining free API keys
 
 ## 🚀 Quick Start
 
-### Prerequisites
+### For Users
+
+1. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **Get Your Free Gemini API Key**
+   - Go to [Google AI Studio](https://aistudio.google.com)
+   - Sign in with your Google account
+   - Click "Get API Key" → "Create API Key"
+   - Copy your new API key
+
+3. **Run the Application**
+   ```bash
+   streamlit run study_assistant.py
+   ```
+
+4. **Use the App**
+   - Enter your API key in the sidebar
+   - Paste your study material in the text area
+   - Configure question settings
+   - Click "Generate Practice Questions"
+   - Review, study, and download your questions!
+
+### For Developers
+
+**Clone and Customize:**
+```bash
+git clone <your-repo-url>
+cd ai-study-assistant
+pip install -r requirements.txt
+streamlit run study_assistant.py
+```
+
+**Optional: Use .env for Local Development**
+
+Create a `.env` file (already in `.gitignore`):
+```env
+GEMINI_API_KEY=your_api_key_here
+```
+
+Modify the code to load from `.env`:
+```python
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+default_key = os.getenv('GEMINI_API_KEY', '')
+```
+
+**⚠️ Never commit `.env` files to Git!**
+
+## 📋 Requirements
 
 - Python 3.8 or higher
-- A Google Gemini API key (free)
+- Streamlit 1.28.0+
+- google-generativeai 0.8.0+
+- Internet connection for API calls
 
-### Installation
+## 🎨 Customization Ideas
 
-1. **Clone or download this repository**
-
-2. **Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-3. **Get your FREE Google Gemini API Key**
-   - Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-   - Sign in with your Google account
-   - Click "Create API Key"
-   - Copy the API key
-
-4. **Run the application**
-```bash
-streamlit run app.py
-```
-
-5. **Open your browser**
-   - The app will automatically open at `http://localhost:8501`
-   - If not, navigate to that URL manually
-
-## 📖 How to Use
-
-1. **Enter API Key**: Paste your Google Gemini API key in the sidebar
-2. **Specify Topic**: Enter the subject you're studying (e.g., "Photosynthesis")
-3. **Choose Question Count**: Select how many questions to generate (3-10)
-4. **Paste Study Material**: Add your notes or textbook content (minimum 50 characters)
-5. **Generate**: Click the "Generate Practice Questions" button
-6. **Review & Download**: Review your questions and download them if needed
-
-## 🌐 Deploy to Streamlit Cloud (FREE)
-
-### Step 1: Prepare Your Repository
-
-1. Create a new repository on GitHub
-2. Upload these files:
-   - `app.py`
-   - `requirements.txt`
-   - `README.md` (this file)
-
-### Step 2: Deploy on Streamlit Cloud
-
-1. Go to [share.streamlit.io](https://share.streamlit.io)
-2. Sign in with your GitHub account
-3. Click "New app"
-4. Select your repository
-5. Set:
-   - **Main file path**: `app.py`
-   - **Python version**: 3.9 or higher
-6. Click "Deploy"
-
-### Step 3: Configure for Public Use
-
-**Important**: For public deployment, you have two options:
-
-#### Option A: Users Enter Their Own API Key (Recommended)
-- The app is configured this way by default
-- Each user enters their own free Google Gemini API key
-- No usage limits or costs for you
-- More secure and scalable
-
-#### Option B: Use Streamlit Secrets (Single API Key)
-If you want to provide a single API key for all users:
-
-1. In Streamlit Cloud, go to your app settings
-2. Click "Secrets"
-3. Add:
-```toml
-GEMINI_API_KEY = "your-api-key-here"
-```
-
-4. Modify `app.py` to use secrets:
+### 1. Change Color Scheme
+Edit the CSS in `study_assistant.py`:
 ```python
-# Add at the top of main() function:
-if "GEMINI_API_KEY" in st.secrets:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    st.sidebar.success("✅ API key loaded from app secrets")
-else:
-    api_key = st.text_input(...)  # existing code
+# Current gradient: purple/blue
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+# Try green/teal:
+background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+
+# Try sunset:
+background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
 ```
 
-**Note**: Option B means all users share your API quota. Monitor usage to avoid hitting limits.
+### 2. Add More Question Types
+Modify the prompt to generate:
+- True/False questions
+- Fill-in-the-blank
+- Short answer questions
+- Matching exercises
 
-## 📋 Example Study Material
-
-```
-Photosynthesis is the process by which plants use sunlight, water, and carbon 
-dioxide to create oxygen and energy in the form of sugar. This process occurs 
-in the chloroplasts of plant cells, specifically in the thylakoid membranes 
-and stroma. The light-dependent reactions occur in the thylakoid membranes and 
-produce ATP and NADPH, while the light-independent reactions (Calvin cycle) 
-occur in the stroma and use ATP and NADPH to fix carbon dioxide into glucose.
-```
-
-## 🛠️ Technical Details
-
-### File Structure
-```
-ai-study-assistant/
-├── app.py              # Main application file
-├── requirements.txt    # Python dependencies
-└── README.md          # This file
+### 3. Add Difficulty Levels
+Add a difficulty selector in the sidebar:
+```python
+difficulty = st.selectbox(
+    "Difficulty Level",
+    ["Easy", "Medium", "Hard", "Mixed"]
+)
 ```
 
-### Dependencies
-- **streamlit**: Web application framework
-- **google-generativeai**: Google Gemini API client
+### 4. Support File Uploads
+Add PDF/DOCX support:
+```python
+uploaded_file = st.file_uploader("Upload study material", type=['txt', 'pdf', 'docx'])
+```
 
-### How It Works
+### 5. Add Study Timer
+Track how long users spend on each question set.
 
-1. **User Input**: Student provides study material and topic
-2. **API Call**: App sends structured prompt to Google Gemini
-3. **AI Processing**: Gemini generates questions in specified format
-4. **Parsing**: App extracts questions, options, answers, and explanations
-5. **Display**: Results shown in formatted, interactive interface
-6. **Download**: Option to save questions as text file
+### 6. Export to Different Formats
+Add export options for:
+- JSON
+- CSV
+- Markdown
+- Flashcard format (Anki compatible)
 
-## 🔧 Troubleshooting
+## 🔧 How It Works
 
-### "Error configuring API"
-- Check that your API key is correct
-- Ensure you're connected to the internet
-- Verify the API key hasn't expired
+1. **User Input**: User provides API key and study material
+2. **API Configuration**: App configures Gemini API with user's key
+3. **Prompt Engineering**: Constructs detailed prompt with specific formatting rules
+4. **AI Generation**: Gemini 1.5 Flash model generates questions
+5. **Caching**: Results cached for 1 hour to reduce API calls
+6. **Display**: Questions formatted and displayed with styling
+7. **Download**: Option to save questions for offline study
 
-### "No response from AI"
+## 📊 API Usage
+
+- **Model**: Gemini 1.5 Flash (optimized for speed)
+- **Typical Cost**: Free tier includes generous quota
+- **Rate Limits**: Handled with error messages
+- **Caching**: 1-hour TTL reduces redundant API calls
+
+## 🐛 Troubleshooting
+
+**"Invalid API key" Error**
+- Verify you copied the entire key from AI Studio
+- Check for extra spaces before/after the key
+- Generate a new key if needed
+
+**"Rate limit exceeded" Error**
+- Wait a few minutes before trying again
+- Gemini free tier has rate limits
+- Consider upgrading to paid tier for higher limits
+
+**Questions Not Generating**
+- Ensure your study material is substantive (50+ words recommended)
 - Check your internet connection
-- Try reducing the number of questions
-- Ensure your study material is sufficient (50+ characters)
+- Verify API key is validated (green checkmark)
 
-### "Could not parse questions"
-- Try rephrasing your study material
-- Use more structured, educational content
-- Check the debug output in the expander
+**Empty or Poor Quality Questions**
+- Provide more detailed study material
+- Use the topic focus field to guide the AI
+- Try regenerating (cache clears after 1 hour)
 
-### Questions not generating
-- Verify API key is entered correctly
-- Ensure topic field is filled
-- Check that study material is at least 50 characters
-- Look at browser console for errors (F12)
+## 📝 License
 
-## 💡 Tips for Best Results
-
-1. **Provide Quality Content**: Use clear, educational text from reliable sources
-2. **Be Specific**: Narrow topics produce better questions (e.g., "Photosynthesis in C3 plants" vs "Plants")
-3. **Sufficient Material**: 200-500 words works best
-4. **Review Questions**: AI-generated content should be reviewed for accuracy
-5. **Start Small**: Try 3-5 questions first, then increase
-
-## 🔒 Privacy & Security
-
-- API keys are entered locally and never stored
-- Study material is only sent to Google's Gemini API
-- No data is saved on servers
-- Each session is independent
-
-## 📊 API Usage Limits
-
-Google Gemini free tier includes:
-- 60 requests per minute
-- Sufficient for most educational use
-
-For heavy usage, consider Google's paid plans.
+This project is open source and available under the MIT License.
 
 ## 🤝 Contributing
 
-Contributions are welcome! Feel free to:
-- Report bugs
-- Suggest features
-- Submit pull requests
+Contributions are welcome! Some ideas:
+- Add support for more AI models (Claude, GPT)
+- Implement quiz mode with scoring
+- Add spaced repetition scheduling
+- Create mobile-responsive improvements
+- Add multi-language support
 
-## 📄 License
+## ⚠️ Important Notes
 
-This project is open source and available for educational purposes.
+- **Privacy**: Your API key and content are never stored permanently
+- **Responsibility**: You are responsible for your API usage and costs
+- **Content**: Ensure you have rights to the study material you use
+- **Academic Integrity**: Use as a study aid, not for cheating
 
-## 🆘 Support
+## 📧 Support
 
-If you encounter issues:
-1. Check the troubleshooting section
-2. Review your API key and internet connection
-3. Try with different study material
-4. Check Streamlit Cloud logs (if deployed)
-
-## 🌟 Acknowledgments
-
-- Built with [Streamlit](https://streamlit.io)
-- Powered by [Google Gemini AI](https://deepmind.google/technologies/gemini/)
-- Made with ❤️ for students everywhere
+For issues or questions:
+- Check the troubleshooting section above
+- Review [Gemini API documentation](https://ai.google.dev/docs)
+- Open an issue on GitHub
 
 ---
 
-**Happy Studying! 📚✨**
+Made with ❤️ by students, for students. Happy studying! 📚✨
