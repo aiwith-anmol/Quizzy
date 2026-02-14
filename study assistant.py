@@ -237,7 +237,7 @@ def main():
         )
         
         api_key_input = st.text_input(
-            "Enter your Gemini API Key",
+            "AIzaSyD6lgO-WAA8vD3WYtI4TRFIgTJ2cmkVNjQ",
             type="password",
             value=st.session_state.api_key,
             help="Your API key is stored only in this session and never saved."
