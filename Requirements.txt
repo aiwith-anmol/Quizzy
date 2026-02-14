@@ -1,21 +1,2 @@
-git add requirements.txt
-   git commit -m "Fix: Simplify requirements.txt"
-   git push
-```
-
-3. **In Streamlit Cloud**, click **"Reboot app"** or it will auto-deploy
-
-### 💡 Why This Works:
-
-- Streamlit Cloud automatically includes `protobuf` and other dependencies
-- Simpler is better - let package managers handle sub-dependencies
-- No version constraints means it gets the latest compatible versions
-
-### ⚠️ Alternative: Check File Location
-
-Make sure your `requirements.txt` is in the **root directory** of your repo:
-```
-your-repo/
-├── app.py
-├── requirements.txt  ← Must be here
-└── README.md
+streamlit
+google-generativeai
