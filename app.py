@@ -1,427 +1,182 @@
-"""
-AI Study Assistant - Generate Practice Questions from Study Material
-Built with Streamlit and Google Gemini API
-"""
-
 import streamlit as st
-import google.generativeai as genai
+
+# Check if google.generativeai is available, if not show installation message
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    GENAI_AVAILABLE = False
+
 import re
 from typing import List, Dict
 
-# Page configuration
-st.set_page_config(
-    page_title="AI Study Assistant",
-    page_icon="📚",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+# Page config
+st.set_page_config(page_title="Quizzy - AI Study Assistant", page_icon="🧠", layout="wide")
 
-# Custom CSS for better UI
+# CSS
 st.markdown("""
-    <style>
-    .main-header {
-        font-size: 3rem;
-        color: #1E88E5;
-        text-align: center;
-        margin-bottom: 1rem;
-    }
-    .sub-header {
-        font-size: 1.2rem;
-        color: #666;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    .question-box {
-        background-color: #f0f2f6;
-        padding: 20px;
-        border-radius: 10px;
-        margin: 15px 0;
-        border-left: 5px solid #1E88E5;
-    }
-    .correct-answer {
-        background-color: #d4edda;
-        padding: 10px;
-        border-radius: 5px;
-        margin-top: 10px;
-    }
-    .explanation {
-        background-color: #fff3cd;
-        padding: 10px;
-        border-radius: 5px;
-        margin-top: 10px;
-    }
-    .stButton>button {
-        width: 100%;
-        background-color: #1E88E5;
-        color: white;
-        font-size: 1.2rem;
-        padding: 0.5rem;
-        border-radius: 10px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+<style>
+    .main-header {font-size: 2.5rem; color: #1E88E5; text-align: center; margin-bottom: 0.5rem;}
+    .question-box {background: #f0f2f6; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #1E88E5;}
+    .correct {background: #d4edda; padding: 8px; border-radius: 5px; margin-top: 8px;}
+    .explanation {background: #fff3cd; padding: 8px; border-radius: 5px; margin-top: 8px;}
+</style>
+""", unsafe_allow_html=True)
 
-def initialize_session_state():
-    """Initialize session state variables"""
-    if 'questions_generated' not in st.session_state:
-        st.session_state.questions_generated = False
-    if 'generated_questions' not in st.session_state:
-        st.session_state.generated_questions = []
+def init_session():
+    if 'questions' not in st.session_state:
+        st.session_state.questions = []
 
-def configure_gemini(api_key: str) -> bool:
-    """
-    Configure Google Gemini API with the provided API key
-    
-    Args:
-        api_key: Google Gemini API key
-    
-    Returns:
-        bool: True if configuration successful, False otherwise
-    """
+def generate_questions(material: str, topic: str, count: int, api_key: str) -> List[Dict]:
     try:
         genai.configure(api_key=api_key)
-        return True
-    except Exception as e:
-        st.error(f"❌ Error configuring API: {str(e)}")
-        return False
-
-def generate_questions(study_material: str, topic: str, num_questions: int, api_key: str) -> List[Dict]:
-    """
-    Generate practice questions using Google Gemini API
-    
-    Args:
-        study_material: The study notes/content provided by user
-        topic: Specific topic to focus on
-        num_questions: Number of questions to generate
-        api_key: Google Gemini API key
-    
-    Returns:
-        List of question dictionaries
-    """
-    try:
-        # Configure API
-        if not configure_gemini(api_key):
-            return []
-        
-        # Initialize the model
         model = genai.GenerativeModel('gemini-pro')
         
-        # Create detailed prompt for question generation
-        prompt = f"""
-You are an expert educator creating practice questions for students.
+        prompt = f"""Generate {count} multiple-choice questions about {topic} from this material:
 
-Based on the following study material about "{topic}", generate exactly {num_questions} multiple-choice questions (MCQs).
+{material}
 
-Study Material:
-{study_material}
+Format each question EXACTLY like this:
 
-Instructions:
-1. Create {num_questions} high-quality multiple-choice questions
-2. Each question should have 4 options (A, B, C, D)
-3. Only ONE option should be correct
-4. Provide a brief explanation for the correct answer
-5. Questions should test understanding, not just memorization
-6. Make questions clear and unambiguous
-
-Format each question EXACTLY as follows:
-
-Question 1: [Your question here]
-A) [Option A]
-B) [Option B]
-C) [Option C]
-D) [Option D]
+Question 1: [question text]
+A) [option]
+B) [option]
+C) [option]
+D) [option]
 Correct Answer: [A/B/C/D]
-Explanation: [Brief explanation of why this is correct]
+Explanation: [why this is correct]
 
-Question 2: [Your question here]
-...and so on.
+Generate all {count} questions now."""
 
-Generate the questions now:
-"""
-        
-        # Generate content
-        with st.spinner('🤖 AI is generating your practice questions...'):
+        with st.spinner('Generating questions...'):
             response = model.generate_content(prompt)
-            
-            if not response or not response.text:
-                st.error("❌ No response from AI. Please try again.")
-                return []
-            
-            # Parse the response
-            questions = parse_questions(response.text)
-            
-            if not questions:
-                st.error("❌ Could not parse questions. Please try again.")
-                st.expander("Debug: Raw AI Response").write(response.text)
-                return []
-            
-            return questions
-            
+            return parse_response(response.text)
     except Exception as e:
-        st.error(f"❌ Error generating questions: {str(e)}")
-        st.info("💡 Tip: Make sure your API key is valid and you have internet connection.")
+        st.error(f"Error: {str(e)}")
         return []
 
-def parse_questions(response_text: str) -> List[Dict]:
-    """
-    Parse the AI response into structured question dictionaries
-    
-    Args:
-        response_text: Raw text response from AI
-    
-    Returns:
-        List of parsed questions
-    """
+def parse_response(text: str) -> List[Dict]:
     questions = []
+    blocks = re.split(r'Question \d+:', text)[1:]
     
-    # Split by "Question X:" pattern
-    question_blocks = re.split(r'Question \d+:', response_text)
-    
-    for block in question_blocks[1:]:  # Skip first empty split
+    for block in blocks:
         try:
-            lines = [line.strip() for line in block.strip().split('\n') if line.strip()]
-            
-            if len(lines) < 6:  # Need at least: question, 4 options, answer, explanation
+            lines = [l.strip() for l in block.strip().split('\n') if l.strip()]
+            if len(lines) < 6:
                 continue
             
-            # Extract question text (first line)
-            question_text = lines[0]
+            q_text = lines[0]
+            opts = {}
             
-            # Extract options (next 4 lines starting with A), B), C), D))
-            options = {}
-            option_lines = [l for l in lines if re.match(r'^[A-D]\)', l)]
-            
-            for opt_line in option_lines[:4]:
-                match = re.match(r'^([A-D])\)\s*(.+)', opt_line)
+            for line in lines:
+                match = re.match(r'^([A-D])\)\s*(.+)', line)
                 if match:
-                    options[match.group(1)] = match.group(2)
+                    opts[match.group(1)] = match.group(2)
             
-            # Extract correct answer
-            correct_answer = ""
-            for line in lines:
-                if line.startswith("Correct Answer:"):
-                    correct_answer = re.search(r'[A-D]', line)
-                    if correct_answer:
-                        correct_answer = correct_answer.group(0)
-                    break
-            
-            # Extract explanation
+            correct = ""
             explanation = ""
-            for line in lines:
-                if line.startswith("Explanation:"):
-                    explanation = line.replace("Explanation:", "").strip()
-                    break
             
-            # Only add if we have all components
-            if question_text and len(options) == 4 and correct_answer and explanation:
+            for line in lines:
+                if 'Correct Answer:' in line:
+                    ans = re.search(r'[A-D]', line)
+                    if ans:
+                        correct = ans.group(0)
+                if 'Explanation:' in line:
+                    explanation = line.split('Explanation:', 1)[1].strip()
+            
+            if q_text and len(opts) == 4 and correct and explanation:
                 questions.append({
-                    'question': question_text,
-                    'options': options,
-                    'correct_answer': correct_answer,
+                    'question': q_text,
+                    'options': opts,
+                    'correct': correct,
                     'explanation': explanation
                 })
-        
-        except Exception as e:
-            continue  # Skip malformed questions
+        except:
+            continue
     
     return questions
 
 def display_questions(questions: List[Dict]):
-    """
-    Display generated questions in a formatted way
-    
-    Args:
-        questions: List of question dictionaries
-    """
     if not questions:
-        st.warning("⚠️ No questions were generated. Please try again with different content.")
+        st.warning("No questions generated. Try different content.")
         return
     
-    st.success(f"✅ Successfully generated {len(questions)} practice questions!")
+    st.success(f"✅ Generated {len(questions)} questions!")
     st.markdown("---")
     
-    for idx, q in enumerate(questions, 1):
-        st.markdown(f"""
-        <div class="question-box">
-            <h3>Question {idx}</h3>
-            <p style="font-size: 1.1rem; font-weight: 500;">{q['question']}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    for i, q in enumerate(questions, 1):
+        st.markdown(f'<div class="question-box"><h3>Question {i}</h3><p>{q["question"]}</p></div>', unsafe_allow_html=True)
         
-        # Display options
-        for option_key in ['A', 'B', 'C', 'D']:
-            if option_key in q['options']:
-                is_correct = option_key == q['correct_answer']
-                icon = "✅" if is_correct else "⚪"
-                st.markdown(f"{icon} **{option_key})** {q['options'][option_key]}")
+        for opt in ['A', 'B', 'C', 'D']:
+            icon = "✅" if opt == q['correct'] else "⚪"
+            st.markdown(f"{icon} **{opt})** {q['options'][opt]}")
         
-        # Display correct answer and explanation
-        st.markdown(f"""
-        <div class="correct-answer">
-            <strong>✓ Correct Answer: {q['correct_answer']}</strong>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        st.markdown(f"""
-        <div class="explanation">
-            <strong>💡 Explanation:</strong> {q['explanation']}
-        </div>
-        """, unsafe_allow_html=True)
-        
+        st.markdown(f'<div class="correct"><strong>Correct: {q["correct"]}</strong></div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="explanation"><strong>💡</strong> {q["explanation"]}</div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
 
-def main():
-    """Main application function"""
-    
-    # Initialize session state
-    initialize_session_state()
-    
-    # Header
-    st.markdown('<h1 class="main-header">📚 AI Study Assistant</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-header">Generate practice questions from your study material using AI</p>', unsafe_allow_html=True)
-    
-    # Sidebar
-    with st.sidebar:
-        st.header("⚙️ Settings")
-        
-        # API Key input
-        st.markdown("### 🔑 API Configuration")
-        api_key = st.text_input(
-            "Enter your Google Gemini API Key",
-            type="password",
-            help="Get your free API key from https://makersuite.google.com/app/apikey"
-        )
-        
-        if not api_key:
-            st.info("👆 Please enter your API key to continue")
-            st.markdown("""
-            **How to get an API key:**
-            1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
-            2. Sign in with your Google account
-            3. Click "Create API Key"
-            4. Copy and paste it above
-            
-            *The API is free to use!*
-            """)
-        
-        st.markdown("---")
-        
-        # Topic input
-        st.markdown("### 📖 Study Topic")
-        topic = st.text_input(
-            "What topic are you studying?",
-            placeholder="e.g., Photosynthesis, World War II, Calculus",
-            help="Specify the main topic for focused question generation"
-        )
-        
-        # Number of questions
-        st.markdown("### 🔢 Question Count")
-        num_questions = st.slider(
-            "How many questions to generate?",
-            min_value=3,
-            max_value=10,
-            value=5,
-            help="More questions take longer to generate"
-        )
-        
-        st.markdown("---")
-        st.markdown("""
-        ### 📝 Tips for Best Results
-        - Paste at least 200-300 words
-        - Be specific with your topic
-        - Use clear, educational content
-        - Check the examples below!
-        """)
-    
-    # Main content area
-    col1, col2 = st.columns([2, 1])
-    
-    with col1:
-        st.markdown("### 📄 Your Study Material")
-        study_material = st.text_area(
-            "Paste your notes, textbook content, or study material here:",
-            height=300,
-            placeholder="""Example: Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to create oxygen and energy in the form of sugar. This process occurs in the chloroplasts of plant cells, specifically in the thylakoid membranes and stroma. The light-dependent reactions occur in the thylakoid membranes and produce ATP and NADPH, while the light-independent reactions (Calvin cycle) occur in the stroma and use ATP and NADPH to fix carbon dioxide into glucose...""",
-            help="Paste educational content related to your topic"
-        )
-    
-    with col2:
-        st.markdown("### 📚 Example Topics")
-        st.info("""
-        **Science:**
-        - Photosynthesis
-        - Newton's Laws
-        - Cell Division
-        
-        **History:**
-        - World War II
-        - Renaissance Period
-        - American Revolution
-        
-        **Math:**
-        - Quadratic Equations
-        - Calculus Basics
-        - Probability Theory
-        
-        **Literature:**
-        - Shakespeare's Works
-        - Poetry Analysis
-        - Literary Devices
-        """)
-    
-    # Generate button
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🚀 Generate Practice Questions", type="primary"):
-        # Validation
-        if not api_key:
-            st.error("❌ Please enter your Google Gemini API key in the sidebar.")
-        elif not topic:
-            st.error("❌ Please specify a study topic in the sidebar.")
-        elif not study_material or len(study_material.strip()) < 50:
-            st.error("❌ Please provide at least 50 characters of study material.")
-        else:
-            # Generate questions
-            questions = generate_questions(study_material, topic, num_questions, api_key)
-            
-            if questions:
-                st.session_state.generated_questions = questions
-                st.session_state.questions_generated = True
-    
-    # Display results
-    if st.session_state.questions_generated and st.session_state.generated_questions:
-        st.markdown("---")
-        st.markdown("## 🎯 Your Practice Questions")
-        display_questions(st.session_state.generated_questions)
-        
-        # Download option
-        if st.session_state.generated_questions:
-            # Create downloadable text
-            download_text = f"Practice Questions - {topic}\n{'='*50}\n\n"
-            for idx, q in enumerate(st.session_state.generated_questions, 1):
-                download_text += f"Question {idx}: {q['question']}\n"
-                for opt_key in ['A', 'B', 'C', 'D']:
-                    if opt_key in q['options']:
-                        download_text += f"{opt_key}) {q['options'][opt_key]}\n"
-                download_text += f"\nCorrect Answer: {q['correct_answer']}\n"
-                download_text += f"Explanation: {q['explanation']}\n\n"
-                download_text += "-" * 50 + "\n\n"
-            
-            st.download_button(
-                label="📥 Download Questions as Text File",
-                data=download_text,
-                file_name=f"{topic.replace(' ', '_')}_questions.txt",
-                mime="text/plain"
-            )
-    
-    # Footer
-    st.markdown("---")
-    st.markdown("""
-    <div style="text-align: center; color: #666; padding: 20px;">
-        <p>Made with ❤️ using Streamlit and Google Gemini AI</p>
-        <p style="font-size: 0.9rem;">💡 Tip: Generate new questions by modifying your study material or topic!</p>
-    </div>
-    """, unsafe_allow_html=True)
+# Main app
+init_session()
 
-if __name__ == "__main__":
-    main()
+st.markdown('<h1 class="main-header">🧠 Quizzy</h1>', unsafe_allow_html=True)
+st.markdown('<p style="text-align: center; color: #666;">AI-powered study assistant - Turn notes into practice questions</p>', unsafe_allow_html=True)
+
+# Check if package is available
+if not GENAI_AVAILABLE:
+    st.error("⚠️ Google Generative AI package not installed!")
+    st.info("Add 'google-generativeai' to requirements.txt and redeploy")
+    st.stop()
+
+# Sidebar
+with st.sidebar:
+    st.header("⚙️ Settings")
+    
+    api_key = st.text_input("Google Gemini API Key", type="password", help="Get free key from https://makersuite.google.com/app/apikey")
+    
+    if not api_key:
+        st.info("👆 Enter API key to start")
+        st.markdown("[Get free API key →](https://makersuite.google.com/app/apikey)")
+    
+    st.markdown("---")
+    topic = st.text_input("Study Topic", placeholder="e.g., Photosynthesis")
+    count = st.slider("Questions", 3, 10, 5)
+    
+    st.markdown("---")
+    st.caption("💡 Paste 100-500 words for best results")
+
+# Main area
+material = st.text_area(
+    "📝 Paste your study material:",
+    height=250,
+    placeholder="Paste your notes, textbook content, or any study material here...",
+    help="Minimum 50 characters"
+)
+
+if st.button("🚀 Generate Questions", type="primary", use_container_width=True):
+    if not api_key:
+        st.error("❌ Enter API key in sidebar")
+    elif not topic:
+        st.error("❌ Enter study topic in sidebar")
+    elif len(material) < 50:
+        st.error("❌ Add at least 50 characters of study material")
+    else:
+        questions = generate_questions(material, topic, count, api_key)
+        st.session_state.questions = questions
+
+# Display
+if st.session_state.questions:
+    st.markdown("---")
+    display_questions(st.session_state.questions)
+    
+    # Download
+    download_text = f"Quizzy - {topic}\n{'='*50}\n\n"
+    for i, q in enumerate(st.session_state.questions, 1):
+        download_text += f"Q{i}: {q['question']}\n"
+        for o in ['A','B','C','D']:
+            download_text += f"{o}) {q['options'][o]}\n"
+        download_text += f"Answer: {q['correct']}\n{q['explanation']}\n\n"
+    
+    st.download_button("📥 Download Questions", download_text, f"{topic}_quiz.txt", "text/plain")
+
+st.markdown("---")
+st.markdown("<p style='text-align: center; color: #666;'>Made with ❤️ using Streamlit & Google Gemini</p>", unsafe_allow_html=True)
